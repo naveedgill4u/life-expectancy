@@ -1,0 +1,81 @@
+---
+title: "Life Expectancy for Political Candidates"
+author: Naveed Ahmad
+format: html
+execute: 
+  echo: false
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+library(primer.data)
+library(tidymodels)
+library(broom)
+library(knitr)
+library(marginaleffects)
+library(ggplot2)
+library(dplyr)
+```
+
+<div style="text-align: justify;">The candidates for governors in USA have difference in life after election needs verification. In this study by using data from election results and candidate longevity, the question; is there difference in life span of candidates for governors in USA? will be answered. Our model is based upon assumptions, particularly that data set represents the candidates for governor but due to time factor this assumption may suffer and accordingly affect results of this study. I have used the liner regression model and results of the model show that age of male candidate is 58.31 after election with range of prediction from	53.26 to	63.36. Sex male has positive probability towards age and after election age has negative prediction towards male sex.</div>
+
+## Probality Family
+<div style="text-align: justify;">Since lived after is our outcome variable and also continuous in our data set, the probability family is Normal, also known as Gaussian and it is as under: </div>
+$$
+Y_i \sim \mathcal{N}(\mu_i, \sigma^2)
+$$
+
+## Mathematical Model
+<div style="text-align: justify;"> General mathematical in view of our outcome variables is under: </div>
+$$
+\mu_i = \beta_0 + \beta_1 X_{1i} + \cdots + \beta_k X_{ki}
+$$
+
+## Data Generating Model
+$$
+\widehat{\text{lived\_after}} = 58.30 + 0.146 \cdot \text{sex}_{\text{Male}} - 0.681 \cdot \text{election\_age}
+$$
+
+$$
+\text{lived\_after}_i \sim \mathcal{N}(\mu_i, \sigma^2)
+$$
+
+$$
+\mu_i = 58.30 + 0.146 \cdot \text{sex}_{\text{Male}, i} - 0.681 \cdot \text{election\_age}_i
+$$
+
+## Coefficients
+```{r}
+x <- governors |>
+     select(lived_after, sex, election_age)
+fit_years <- linear_reg(engine = "lm") |> 
+  fit(lived_after ~ sex + election_age, data = x) 
+  tidy(fit_years, conf.int = TRUE) |>
+  select(term, estimate, conf.low, conf.high) |>
+  kable(digits = 2, col.names = c("Variable", "Estimate", "Lower CI", "Upper CI"))
+```
+
+## Prediction Chart
+```{r}
+coef_df <- tidy(fit_years, conf.int = TRUE)
+
+# Optional: clean names
+coef_df$term <- recode(coef_df$term,
+                       "(Intercept)" = "Intercept",
+                       "sexMale" = "Sex: Male",
+                       "election_age" = "Election Age")
+
+# Plot
+ggplot(coef_df, aes(x = estimate, y = term)) +
+  geom_point(size = 3, color = "#0072B2") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, color = "#0072B2") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Estimated Coefficients from Linear Regression Model",
+    subtitle = "Dependent Variable: lived_after",
+    x = "Estimate (95% Confidence Interval)",
+    y = NULL,
+    caption = "Data source: your dataset (x)")
+```
